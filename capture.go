@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"strings"
 	"time"
 
 	metrics "github.com/rcrowley/go-metrics"
@@ -71,10 +72,10 @@ func CaptureSystemStatsOnce(r metrics.Registry) {
 		if cpuStat == nil {
 			cpuStat = &cpustat2
 		}
-		total1, _ := getAllCPUTime(*cpuStat)
-		total2, _ := getAllCPUTime(cpustat2)
+		total1 := getAllCPUTime(*cpuStat)
+		total2 := getAllCPUTime(cpustat2)
 		total := total2 - total1
-		if total != 0 {
+		if total > 0 {
 			systemMetrics.CPUStat.User.Update(int64((cpustat2.User - cpuStat.User) * 100 / total))
 			systemMetrics.CPUStat.System.Update(int64((cpustat2.System - cpuStat.System) * 100 / total))
 			systemMetrics.CPUStat.Iowait.Update(int64((cpustat2.Iowait - cpuStat.Iowait) * 100 / total))
@@ -221,16 +222,18 @@ func RegisterSystemStats(r metrics.Registry) {
 	r.Register("swapmem.Free", systemMetrics.SwapMemStat.Free)
 	r.Register("swapmem.Used", systemMetrics.SwapMemStat.Used)
 	for _, p := range partitions {
+
 		systemMetrics.DiskStat[p].Total = metrics.NewGauge()
 		systemMetrics.DiskStat[p].Free = metrics.NewGauge()
 
-		r.Register("disk."+p+".Total", systemMetrics.DiskStat[p].Total)
-		r.Register("disk."+p+".Free", systemMetrics.DiskStat[p].Free)
+		pn := strings.Replace(p, "/", "_", -1)
+		r.Register("disk."+pn+".Total", systemMetrics.DiskStat[p].Total)
+		r.Register("disk."+pn+".Free", systemMetrics.DiskStat[p].Free)
 	}
 	r.Register("capture_system", systemMetrics.captureSystemTimer)
 }
 
-func getAllCPUTime(t cpu.TimesStat) (float64, float64) {
-	return 0, t.User + t.System + t.Nice + t.Iowait + t.Irq +
+func getAllCPUTime(t cpu.TimesStat) float64 {
+	return t.User + t.System + t.Nice + t.Iowait + t.Irq +
 		t.Softirq + t.Steal + t.Guest + t.GuestNice + t.Stolen + +t.Idle
 }

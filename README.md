@@ -1,2 +1,3 @@
 # go-metrics-system
-add system monitor (cpu/load/memory/disk/bandwidth) to go-metrics
+
+Add system monitor (cpu/load/memory/disk/bandwidth) to [go-metrics](https://github.com/rcrowley/go-metrics).

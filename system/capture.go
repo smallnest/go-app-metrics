@@ -1,4 +1,4 @@
-package monitor
+package system
 
 import (
 	"strings"
@@ -72,8 +72,8 @@ func CaptureSystemStatsOnce(r metrics.Registry) {
 		if cpuStat == nil {
 			cpuStat = &cpustat2
 		}
-		total1 := getAllCPUTime(*cpuStat)
-		total2 := getAllCPUTime(cpustat2)
+		total1 := cpuStat.Total()
+		total2 := cpustat2.Total()
 		total := total2 - total1
 		if total > 0 {
 			systemMetrics.CPUStat.User.Update(int64((cpustat2.User - cpuStat.User) * 100 / total))
@@ -165,7 +165,7 @@ func registerBandwidthMetrics(r metrics.Registry, name string) {
 	r.Register("bandwidth."+name+".PacketsRecv", bsGauge)
 }
 
-// RegisterSystemStats registers systemMetrics for the system statistics.
+// RegisterSystemStats registers systemMetrics into rcrowley/go-metrics.Registry for the system statistics.
 //  The systemMetrics are named by their categories and names, i.e. cpu.Usage.
 func RegisterSystemStats(r metrics.Registry) {
 	stats, _ := disk.Partitions(true)
@@ -231,9 +231,4 @@ func RegisterSystemStats(r metrics.Registry) {
 		r.Register("disk."+pn+".Free", systemMetrics.DiskStat[p].Free)
 	}
 	r.Register("capture_system", systemMetrics.captureSystemTimer)
-}
-
-func getAllCPUTime(t cpu.TimesStat) float64 {
-	return t.User + t.System + t.Nice + t.Iowait + t.Irq +
-		t.Softirq + t.Steal + t.Guest + t.GuestNice + t.Stolen + +t.Idle
 }

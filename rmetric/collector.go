@@ -1,4 +1,5 @@
-package runtime
+// Package rmetric provides method to collect metrics of go runtime so it is called as rmetric (runtime metrics).
+package rmetric
 
 import (
 	"runtime"
@@ -9,10 +10,10 @@ import (
 // threadProfile for getting number of threads
 var threadProfile = pprof.Lookup("threadcreate")
 
-// StatsHandler represents a handler to handle stats after successfully gathering statistics
-type StatsHandler func(Stats)
+// RuntimeStatsHandler represents a handler to handle stats after successfully gathering statistics
+type RuntimeStatsHandler func(RuntimeStats)
 
-// Collector implements the periodic grabbing of informational data of go runtime to a StatsHandler.
+// Collector implements the periodic grabbing of informational data of go runtime to a RuntimeStatsHandler.
 type Collector struct {
 	// CollectInterval represents the interval in-between each set of stats output.
 	// Defaults to 10 seconds.
@@ -32,15 +33,15 @@ type Collector struct {
 	// statistics and the Run function should return.
 	Done <-chan struct{}
 
-	statsHandler StatsHandler
+	statsHandler RuntimeStatsHandler
 }
 
 // New creates a new Collector that will periodically output statistics to statsHandler. It
 // will also set the values of the exported stats to the described defaults. The values
 // of the exported defaults can be changed at any point before Run is called.
-func New(statsHandler StatsHandler) *Collector {
+func New(statsHandler RuntimeStatsHandler) *Collector {
 	if statsHandler == nil {
-		statsHandler = func(Stats) {}
+		statsHandler = func(RuntimeStats) {}
 	}
 
 	return &Collector{
@@ -52,7 +53,7 @@ func New(statsHandler StatsHandler) *Collector {
 	}
 }
 
-// Run gathers statistics then outputs them to the configured StatsHandler every
+// Run gathers statistics then outputs them to the configured RuntimeStatsHandler every
 // CollectInterval. Unlike Once, this function will return until Done has been closed
 // (or never if Done is nil), therefore it should be called in its own goroutine.
 func (c *Collector) Run() {
@@ -71,20 +72,20 @@ func (c *Collector) Run() {
 }
 
 // Once returns a map containing all statistics. It is safe for use from multiple go routines。
-func (c *Collector) Once() Stats {
+func (c *Collector) Once() RuntimeStats {
 	return c.collectStats()
 }
 
 // collectStats collects all configured stats once.
-func (c *Collector) collectStats() Stats {
-	stats := Stats{}
+func (c *Collector) collectStats() RuntimeStats {
+	stats := RuntimeStats{}
 
 	if c.EnableCPU {
 		cStats := cpuStats{
 			NumGoroutine: int64(runtime.NumGoroutine()),
 			NumThread:    int64(threadProfile.Count()),
 			NumCgoCall:   int64(runtime.NumCgoCall()),
-			NumCpu:       int64(runtime.NumCPU()),
+			NumCPU:       int64(runtime.NumCPU()),
 		}
 		c.collectCPUStats(&stats, &cStats)
 	}
@@ -104,14 +105,14 @@ func (c *Collector) collectStats() Stats {
 	return stats
 }
 
-func (_ *Collector) collectCPUStats(stats *Stats, s *cpuStats) {
-	stats.NumCpu = s.NumCpu
+func (*Collector) collectCPUStats(stats *RuntimeStats, s *cpuStats) {
+	stats.NumCPU = s.NumCPU
 	stats.NumGoroutine = s.NumGoroutine
 	stats.NumThread = s.NumThread
 	stats.NumCgoCall = s.NumCgoCall
 }
 
-func (_ *Collector) collectMemStats(stats *Stats, m *runtime.MemStats) {
+func (*Collector) collectMemStats(stats *RuntimeStats, m *runtime.MemStats) {
 	// General
 	stats.Alloc = int64(m.Alloc)
 	stats.TotalAlloc = int64(m.TotalAlloc)
@@ -139,7 +140,7 @@ func (_ *Collector) collectMemStats(stats *Stats, m *runtime.MemStats) {
 	stats.OtherSys = int64(m.OtherSys)
 }
 
-func (_ *Collector) collectGCStats(stats *Stats, m *runtime.MemStats) {
+func (*Collector) collectGCStats(stats *RuntimeStats, m *runtime.MemStats) {
 	stats.GCSys = int64(m.GCSys)
 	stats.NextGC = int64(m.NextGC)
 	stats.LastGC = int64(m.LastGC)
@@ -150,15 +151,16 @@ func (_ *Collector) collectGCStats(stats *Stats, m *runtime.MemStats) {
 }
 
 type cpuStats struct {
-	NumCpu       int64
+	NumCPU       int64
 	NumGoroutine int64
 	NumThread    int64
 	NumCgoCall   int64
 }
 
-type Stats struct {
+// RuntimeStats represents metrics of go runtime.
+type RuntimeStats struct {
 	// CPU
-	NumCpu       int64 `json:"cpu.count"`
+	NumCPU       int64 `json:"cpu.count"`
 	NumThread    int64 `json:"cpu.threads"`
 	NumGoroutine int64 `json:"cpu.goroutines"`
 	NumCgoCall   int64 `json:"cpu.cgo_calls"`
@@ -203,7 +205,8 @@ type Stats struct {
 	Version string `json:"-"`
 }
 
-func (f *Stats) Tags() map[string]string {
+// Tags return go arch.
+func (f *RuntimeStats) Tags() map[string]string {
 	return map[string]string{
 		"go.os":      f.Goos,
 		"go.arch":    f.Goarch,
@@ -211,9 +214,10 @@ func (f *Stats) Tags() map[string]string {
 	}
 }
 
-func (f *Stats) Values() map[string]interface{} {
+// Values returns metrics which you can write into TSDB.
+func (f *RuntimeStats) Values() map[string]interface{} {
 	return map[string]interface{}{
-		"cpu.count":      f.NumCpu,
+		"cpu.count":      f.NumCPU,
 		"cpu.threads":    f.NumThread,
 		"cpu.goroutines": f.NumGoroutine,
 		"cpu.cgo_calls":  f.NumCgoCall,

@@ -1,4 +1,4 @@
-package runtime
+package rmetric
 
 import (
 	"testing"
@@ -31,15 +31,15 @@ func TestCollector(t *testing.T) {
 		t.Skip("Skipping test because testing.Short is enabled")
 	}
 
-	latestStats := []Stats{}
-	callback := func(stats Stats) {
+	latestStats := []RuntimeStats{}
+	callback := func(stats RuntimeStats) {
 		latestStats = append(latestStats, stats)
 	}
 
 	done := make(chan struct{})
 	collectorShutdown := make(chan struct{})
 	c := New(callback)
-	c.Interval = 100 * time.Millisecond
+	c.CollectInterval = 100 * time.Millisecond
 	c.Done = done
 
 	go func() {

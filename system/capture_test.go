@@ -12,8 +12,8 @@ import (
 func TestMonitor(t *testing.T) {
 	go metrics.Log(metrics.DefaultRegistry, 4*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 
-	RegisterSystemStats(metrics.DefaultRegistry)
+	RegisterSystemMetrics(metrics.DefaultRegistry)
 
-	go CaptureSystemStats(metrics.DefaultRegistry, time.Second)
+	go CaptureSystemMetrics(metrics.DefaultRegistry, time.Second)
 	time.Sleep(5 * time.Second)
 }

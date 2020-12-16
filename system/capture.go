@@ -16,53 +16,56 @@ var (
 	cpuStat       *cpu.TimesStat
 	partitions    []string
 	netStats      = make(map[string]*net.IOCountersStat)
-	systemMetrics struct {
-		CPUStat struct {
-			User   metrics.Gauge
-			System metrics.Gauge
-			Idle   metrics.Gauge
-			Iowait metrics.Gauge
-		}
-		LoadStat struct {
-			Load1  metrics.Gauge
-			Load5  metrics.Gauge
-			Load15 metrics.Gauge
-		}
-		MemStat struct {
-			Total     metrics.Gauge
-			Available metrics.Gauge
-			Used      metrics.Gauge
-		}
-		SwapMemStat struct {
-			Total metrics.Gauge
-			Free  metrics.Gauge
-			Used  metrics.Gauge
-		}
-		DiskStat map[string]*struct {
-			Total metrics.Gauge
-			Free  metrics.Gauge
-		}
-		BandwidthStat map[string]*struct {
-			BytesSent   metrics.Gauge
-			BytesRecv   metrics.Gauge
-			PacketsSent metrics.Gauge
-			PacketsRecv metrics.Gauge
-		}
-		captureSystemTimer metrics.Timer
-	}
+	systemMetrics SystemMetrics
 )
 
-// CaptureSystemStats captures new values for the system statistics.
+// SystemMetrics represents metrics of the machine.
+type SystemMetrics struct {
+	CPUStat struct {
+		User   metrics.Gauge
+		System metrics.Gauge
+		Idle   metrics.Gauge
+		Iowait metrics.Gauge
+	}
+	LoadStat struct {
+		Load1  metrics.Gauge
+		Load5  metrics.Gauge
+		Load15 metrics.Gauge
+	}
+	MemStat struct {
+		Total     metrics.Gauge
+		Available metrics.Gauge
+		Used      metrics.Gauge
+	}
+	SwapMemStat struct {
+		Total metrics.Gauge
+		Free  metrics.Gauge
+		Used  metrics.Gauge
+	}
+	DiskStat map[string]*struct {
+		Total metrics.Gauge
+		Free  metrics.Gauge
+	}
+	BandwidthStat map[string]*struct {
+		BytesSent   metrics.Gauge
+		BytesRecv   metrics.Gauge
+		PacketsSent metrics.Gauge
+		PacketsRecv metrics.Gauge
+	}
+	captureSystemTimer metrics.Timer
+}
+
+// CaptureSystemMetrics captures new values for the system statistics.
 // This is designed to be called as a goroutine.
-func CaptureSystemStats(r metrics.Registry, d time.Duration) {
-	for _ = range time.Tick(d) {
-		CaptureSystemStatsOnce(r)
+func CaptureSystemMetrics(r metrics.Registry, d time.Duration) {
+	for range time.Tick(d) {
+		CaptureSystemMetricsOnce(r)
 	}
 }
 
-// CaptureSystemStatsOnce captures new values for the system statistics.
+// CaptureSystemMetricsOnce captures new values for the system statistics.
 // This is designed to be called in a background goroutine.
-func CaptureSystemStatsOnce(r metrics.Registry) {
+func CaptureSystemMetricsOnce(r metrics.Registry) {
 	t := time.Now()
 
 	//cpu * 100
@@ -165,9 +168,9 @@ func registerBandwidthMetrics(r metrics.Registry, name string) {
 	r.Register("bandwidth."+name+".PacketsRecv", bsGauge)
 }
 
-// RegisterSystemStats registers systemMetrics into rcrowley/go-metrics.Registry for the system statistics.
+// RegisterSystemMetrics registers systemMetrics into rcrowley/go-metrics.Registry for the system statistics.
 //  The systemMetrics are named by their categories and names, i.e. cpu.Usage.
-func RegisterSystemStats(r metrics.Registry) {
+func RegisterSystemMetrics(r metrics.Registry) {
 	stats, _ := disk.Partitions(true)
 	for _, s := range stats {
 		partitions = append(partitions, s.Mountpoint)

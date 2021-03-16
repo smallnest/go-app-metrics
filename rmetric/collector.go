@@ -226,7 +226,7 @@ func (f *RuntimeStats) Values() map[string]interface{} {
 		"mem.total":   f.TotalAlloc,
 		"mem.sys":     f.Sys,
 		"mem.lookups": f.Lookups,
-		"mem.malloc":  f.Mallocs,
+		"mem.mallocs": f.Mallocs,
 		"mem.frees":   f.Frees,
 
 		"mem.heap.alloc":    f.HeapAlloc,

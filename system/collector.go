@@ -83,25 +83,16 @@ func (c *Collector) collectStats() SystemStats {
 		BandwidthStat: make(map[string]BandwidthStat),
 	}
 
-	cpuStat := c.cpuStat
-
 	//cpu * 100
 	cpustats, err := cpu.Times(false)
 	if err == nil && len(cpustats) > 0 {
-		cpustat2 := cpustats[0]
-		if cpuStat == nil {
-			cpuStat = &cpustat2
-		}
-		total1 := cpuStat.Total()
-		total2 := cpustat2.Total()
-		total := total2 - total1
-		if total > 0 {
-			stats.CPUStat.User = (cpustat2.User - cpuStat.User) * 100 / total
-			stats.CPUStat.System = (cpustat2.System - cpuStat.System) * 100 / total
-			stats.CPUStat.Iowait = (cpustat2.Iowait - cpuStat.Iowait) * 100 / total
-			stats.CPUStat.Idle = (cpustat2.Idle - cpuStat.Idle) * 100 / total
-		}
-		c.cpuStat = &cpustat2
+		cpustat := cpustats[0]
+		stats.CPUStat.User = cpustat.User * 100
+		stats.CPUStat.System = cpustat.System * 100
+		stats.CPUStat.Iowait = cpustat.Iowait * 100
+		stats.CPUStat.Idle = cpustat.Idle * 100
+
+		c.cpuStat = &cpustat
 	}
 
 	//load * 100
